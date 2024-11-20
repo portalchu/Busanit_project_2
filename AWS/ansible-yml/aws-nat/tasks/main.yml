@@ -1,0 +1,46 @@
+---
+- name: Create Internet Gateway
+  amazon.aws.ec2_vpc_igw:
+    vpc_id: "{{ vpc.id }}"
+    region: "{{ region }}"
+    state: present
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    tags:
+      Name: TEAM2_IGW
+      Team: TEAM2
+  register: igw
+- name: Create Elastic IP
+  amazon.aws.ec2_eip:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    state: present
+    region: "{{ region }}"
+    tags:
+      Name: TEAM2_IP
+      Team: TEAM2
+  register: eip
+- name: Create NAT Gateway
+  amazon.aws.ec2_vpc_nat_gateway:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    state: present
+    subnet_id: "{{ public_subnet1.id }}"
+    region: "{{ region }}"
+    allocation_id: "{{ eip.allocation_id }}"
+    tags:
+      Name: TEAM2_NAT_Gateway
+      Team: TEAM2
+  register: nat_gateway
+- name: Debug NAT
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - eip
+    - nat_gateway
+    - igw
+- name: set facts
+  set_fact:
+    eip: "{{ eip }}" 
+    nat_gateway: "{{ nat_gateway }}"
+    igw: "{{ igw }}"

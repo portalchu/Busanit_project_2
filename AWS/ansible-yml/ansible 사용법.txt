@@ -1,0 +1,120 @@
+﻿■ Ansible 
+- Virtual box
+- Linux, RedHat 9.x (64-bit), Rocky 9 minimal, 네트워크 (어댑터에 브릿지)
+- Rocky 9 minimal
+- centos 7의 경우 python과 boto의 버전이 낮아 실행이 안됨 
+  → 수동으로 높은 버전을 설치해야함 
+  → 그냥 높은 버전을 바로 받을 수 있는 Rocky 9 버전 사용
+
+■ ansible AWS 기능 사용시 필요한 버전
+python >= 3.6
+boto3 >= 1.26.0
+botocore >= 1.29.0
+
+■ Ansible 설치
+yum upgrade -y
+yum update -y
+yum install vim net-tools
+yum install epel-release -y
+yum install ansible -y
+ansible --version
+
+■ python 및 pip 설치
+yum install python3
+python3 --version		// Python 3.9.18
+yum install python3-pip
+pip install boto3
+pip show boto3			// boto3 1.35.34
+pip show botocore 		// botocore 1.35.34
+
+■ 액세스 키 생성
+기존에 만든 키가 있다면 해당 키 사용 → 없을 경우 아래 내용 따라하기
+→ AWS 콘솔에 로그인 → 오른쪽 위 ‘본인계정@...’ 클릭 → 보안 자격 증명 
+→ 아래로 내려 ‘액세스 키’ 찾기 → 액세스 키 만들기 → ‘Command Line Interface(CLI)’ 체크 
+→ 아래 ‘위 권장 사항을 ..’ 메시지 뜨면 해당 부분 체크 → 다음 → 액세스 키 만들기 
+→ .csv 파일 다운로드 (해당 파일 위치 기억) → 완료
+→ 위에서 받은 .csv 파일 위치로 이동 → .csv 파일 우클릭 → 연결 프로그램 → 메모장 
+→ 파일 내용에 Access key ID,Secret access key가 있으며 아래 중 첫번째 값이 Access key ID, 두번째 값이 Secret access key
+
+■ 엑세스 키 적용
+ansible-vault create pass.txt		// 비번 입력 후 바로 파일 창 뜸
+// 파일 내부에 내용 입력 후 저장
+ec2_access_key: 본인의 Access key ID
+ec2_secret_key: 본인의 Secret access key
+:wq
+// 이후 실행할 때마다 pass.txt 파일을 읽어 실행하며 이때 비번 사용
+
+■ 룰 생성 
+ansible-galaxy role init [룰 이름]
+vim [룰 이름]/tasks/main.yml		// 해당 경로에 내용 작성
+
+■ 룰 실행
+vim [yml 파일 이름].yml
+// 파일 내부에 role 이름을 작성해 role 실행
+// 한번에 여러 개의 role 실행도 가능
+---
+- hosts: localhost
+  connection: local
+  vars:
+    region: ap-northeast-2	// 서울 리전
+  vars_files:
+    - ./pass.txt		// 엑세스 키가 담긴 파일
+  roles:
+    - [실행할 룰1]		// [룰 이름]/tasks/main.yml 파일이 실행
+    - [실행할 룰1]
+:wq
+
+■ 파일 설명
+vim aws-vpc/tasks/main.yml
+---
+- name: Create VPC	// VPC 생성
+  amazon.aws.ec2_vpc_net:	// ansible 공식 페이지의 모듈 확인
+    name: TEAM2_VPC
+    cidr_block: 10.2.0.0/16	
+    region: "{{ region }}"
+    aws_access_key: "{{ ec2_access_key }}"	// 엑세스 키
+    aws_secret_key: "{{ ec2_secret_key }}"
+    tenancy: default
+    tags:
+      Name: TEAM_2_VPC
+  register: vpc
+- name: Check VPC		// AWS의 VPC 조회
+  amazon.aws.ec2_vpc_net_info:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    filters:
+      "tag:Name": TEAM2_VPC	// 해당 태그를 지닌 VPC를 검색
+- name: Debug VPC		// VPC 생성의 결과물을 확인
+  ansible.builtin.debug:
+    var: vpc
+- name: set facts	// 다른 룰에서의 사용을 위해 fact로 저장
+  set_fact:
+    vpc: "{{ vpc }}"
+:wq
+
+■ role 실행
+ansible-playbook [yml 파일 이름].yml --ask-vault-pass
+// 실행 시 위에서 설정한 비번 필요
+
+□ 패스워드 파일 만들기
+// 매번 실행할 때 마다 비밀번호 입력이 귀찮을 경우 파일로 저장 가능
+// pass.txt 파일의 패스워드가 적힌 파일 생성 
+vim key.txt
+// 비밀번호 작성 후 저장
+:wq
+// 비번 입력 없이 실행되는 것을 확인
+ansible-playbook [yml 파일 이름].yml --vault-password-file=key.txt
+
+■ AWS 모듈 읽기
+amazon.aws 모듈 정보 사이트
+https://docs.ansible.com/ansible/latest/collections/amazon/aws/index.html
+
+- 위 사이트에서 필요한 모듈을 찾아 사용
+  - 이름을 통해 구분 했으며 ec2 인스턴스는 'ec2_instance module', 
+     vpc는 'ec2_vpc_net module'처럼 찾아야함
+  - 뒤에 info가 붙은 모듈의 경우 데이터 생성이 아닌 데이터 참조
+- 밑의 Examples를 확인하여 
+
+
+

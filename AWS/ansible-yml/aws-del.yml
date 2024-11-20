@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  vars: 
+    region: ap-northeast-2
+  vars_files:
+    - ./pass.txt
+    - ./var.yml
+  roles:
+    - aws-get-vpc
+    - aws-get-subnet
+    - aws-get-nat
+    - aws-del
+

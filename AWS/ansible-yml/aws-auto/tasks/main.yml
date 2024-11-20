@@ -1,0 +1,26 @@
+---
+- name: Create Auto Scaling Group
+  amazon.aws.autoscaling_group:
+    name: TEAM2-ASG
+    region: "{{ region }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    launch_template:
+      launch_template_name: 'TEAM2_TEMPLATE'
+    availability_zones: ["{{ private_subnet1.availability_zone }}", "{{ private_subnet2.availability_zone }}"]
+    vpc_zone_identifier: ["{{ private_subnet1.id }}", "{{ private_subnet2.id }}"]
+    target_group_arns:
+      - "{{ alb_tg.target_group_arn }}"
+    min_size: 2
+    max_size: 2
+    state: present
+    tags:
+      - Team: TEAM2
+  register: asg
+- name: Debug ASG
+  ansible.builtin.debug:
+    var: asg
+  loop:
+- name: set facts
+  set_fact:
+    asg: "{{ asg }}"

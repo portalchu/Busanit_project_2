@@ -1,0 +1,4 @@
+#!/bin/bash
+docker rmi giry0612/spring-petclinic:latest
+#cd /home/ubuntu/deploy/scripts
+#docker-compose up -d --build;

@@ -1,0 +1,56 @@
+---
+- name: Check Public Subnet1
+  amazon.aws.ec2_vpc_subnet_info:
+    region: "{{ region }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    filters:
+      vpc-id: "{{ vpc.id }}"
+      "tag:Name": TEAM2_Public_Subnet1
+  register: public_subnet1_info
+- name: Check public Subnet2
+  amazon.aws.ec2_vpc_subnet_info:
+    region: "{{ region }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    filters:
+      vpc-id: "{{ vpc.id }}"
+      "tag:Name": TEAM2_Public_Subnet2
+  register: public_subnet2_info
+- name: Check Private Subnet1
+  amazon.aws.ec2_vpc_subnet_info:
+    region: "{{ region }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    filters:
+      vpc-id: "{{ vpc.id }}"
+      "tag:Name": TEAM2_Private_Subnet1
+  register: private_subnet1_info
+- name: Check Private  Subnet2
+  amazon.aws.ec2_vpc_subnet_info:
+    region: "{{ region }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    filters:
+      vpc-id: "{{ vpc.id }}"
+      "tag:Name": TEAM2_Private_Subnet2
+  register: private_subnet2_info
+- name: Debug Subnet
+  ansible.builtin.debug:
+    var: public_subnet1_info
+- name: set facts
+  set_fact:
+    public_subnet1: "{{ public_subnet1_info.subnets[0] }}"
+    public_subnet2: "{{ public_subnet2_info.subnets[0] }}"
+    private_subnet1: "{{ private_subnet1_info.subnets[0] }}"
+    private_subnet2: "{{ private_subnet2_info.subnets[0] }}"
+  when: public_subnet1_info.subnets | length > 0
+- name: Debug facts
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - public_subnet1
+    - public_subnet2
+    - private_subnet1
+    - private_subnet2
+

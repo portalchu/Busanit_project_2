@@ -1,0 +1,58 @@
+---
+- name: Create Public Subnet1
+  amazon.aws.ec2_vpc_subnet:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    cidr: 10.2.0.0/20
+    region: "{{ region }}"
+    az: "{{ region }}a"
+    vpc_id: "{{ vpc.id }}"
+    tags:
+      Name: TEAM2_Public_Subnet1
+      Team: TEAM2
+  register: public_subnet1
+- name: Create Public Subnet2
+  amazon.aws.ec2_vpc_subnet:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    cidr: 10.2.16.0/20
+    region: "{{ region }}"
+    az: "{{ region }}c"
+    vpc_id: "{{ vpc.id }}"
+    tags:
+      Name: TEAM2_Public_Subnet2
+      Team: TEAM2
+  register: public_subnet2
+- name: Create Private Subnet1
+  amazon.aws.ec2_vpc_subnet:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    cidr: 10.2.64.0/20
+    region: "{{ region }}"
+    az: "{{ region }}a"
+    vpc_id: "{{ vpc.id }}"
+    tags:
+      Name: TEAM2_Private_Subnet1
+      Team: TEAM2
+  register: private_subnet1
+- name: Create Private Subnet2
+  amazon.aws.ec2_vpc_subnet:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    cidr: 10.2.80.0/20
+    region: "{{ region }}"
+    az: "{{ region }}c"
+    vpc_id: "{{ vpc.id }}"
+    tags:
+      Name: TEAM2_Private_Subnet2
+      Team: TEAM2
+  register: private_subnet2
+- name: Debug Subnet
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - public_subnet1
+    - public_subnet2
+    - private_subnet1
+    - private_subnet2
+

@@ -1,0 +1,78 @@
+---
+- name: Launch an EC2 Bastion
+  amazon.aws.ec2_instance:
+    name: TEAM2-Bastion
+    key_name: TEAM2_project_key
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    vpc_subnet_id: "{{ public_subnet1.id }}"
+    instance_type: t2.micro      
+    region: "{{ region }}"
+    network:
+      assign_public_ip: true
+    image_id: ami-042e76978adeb8c48
+    security_groups:
+      - TEAM2_SSH
+      - TEAM2_HTTP
+    wait: true
+    tags:
+      Name: TEAM2_Bastion
+      Team: TEAM2
+  register: bastion_ec2
+- name: Launch an EC2 Jenkins
+  amazon.aws.ec2_instance:
+    name: TEAM2-Jenkins
+    key_name: TEAM2_project_key
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    vpc_subnet_id: "{{ private_subnet1.id }}"
+    instance_type: t2.micro
+    region: "{{ region }}"
+    image_id: ami-042e76978adeb8c48
+    security_groups:
+      - TEAM2_SSH
+      - TEAM2_HTTP
+    user_data: "{{ jenkins_data }}"
+    wait: true
+    wait_timeout: 60
+    volumes:
+      - device_name: /dev/sda1 
+        ebs:
+          volume_size: 30
+    tags:
+      Name: TEAM2_Jenkins
+      Team: TEAM2
+  register: jenkins_ec2
+- name: Launch an EC2 Target
+  amazon.aws.ec2_instance:
+    name: TEAM2-Target
+    key_name: TEAM2_project_key
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    vpc_subnet_id: "{{ private_subnet1.id }}"
+    instance_type: t2.micro
+    region: "{{ region }}"
+    image_id: ami-042e76978adeb8c48
+    security_groups:
+      - TEAM2_SSH
+      - TEAM2_HTTP
+    user_data: "{{ target_data }}"
+    wait: true
+    wait_timeout: 180
+    tags:
+      Name: TEAM2_Target
+      Team: TEAM2
+  register: target_ec2
+- name: Debug EC2
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - bastion_ec2
+    - jenkins_ec2
+    - target_ec2
+- name: set facts
+  set_fact:
+    bastion_ec2: "{{ bastion_ec2 }}"
+    jenkins_ec2: "{{ jenkins_ec2 }}"
+    target_ec2: "{{ target_ec2 }}"
+

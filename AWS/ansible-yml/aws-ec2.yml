@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  vars:
+    region: ap-northeast-2
+    target_data: "{{ lookup('file','target-data.sh') }}"
+    jenkins_data: "{{ lookup('file','jenkins-data.sh') }}"
+  vars_files:
+    - ./pass.txt
+  roles:
+    - aws-get-vpc
+    - aws-get-subnet
+    - aws-sg
+    - aws-ec2
+    - aws-ami
+    - aws-lt
+    - aws-ec2-del

@@ -1,0 +1,9 @@
+---
+- hosts: localhost
+  vars:
+    region: ap-northeast-2
+  vars_files:
+    - ./pass.txt
+  roles:
+    - aws-get-lb
+    - aws-r53

@@ -1,0 +1,154 @@
+---
+- name: delete Auto
+  amazon.aws.autoscaling_group:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    name: TEAM2-ASG
+    state: absent
+  register: del_auto
+- name: delete ALB
+  amazon.aws.elb_application_lb:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    name: TEAM2-ALB
+    state: absent
+  register: del_alb
+- name: delete EC2
+  amazon.aws.ec2_instance:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    state: absent
+    filters:
+      "tag:Team": TEAM2
+  register: del_ec2
+- name: delete TG
+  community.aws.elb_target_group:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    name: "{{ item }}"
+    state: absent
+  register: del_tg
+  loop:
+    - TEAM2-TG
+    - TEAM2-JG
+- name: delete LT
+  community.aws.ec2_launch_template:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    name: TEAM2_TEMPLATE
+    state: absent
+  register: del_lt
+- name: Check AMI
+  amazon.aws.ec2_ami_info:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    filters:
+      "tag:Name": TEAM2_AMI
+  register: ami
+- name: debug AMI
+  ansible.builtin.debug:
+    var: ami
+- name: delete AMI
+  amazon.aws.ec2_ami:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    image_id: "{{ ami.images[0].image_id }}"
+    state: absent
+  when: ami.images | length>0
+  register: del_ami 
+- name: delete Security Group
+  amazon.aws.ec2_security_group:
+    region: "{{ region }}"
+    vpc_id: "{{ vpc.id }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    name: "{{ item }}"
+    state: absent 
+  register: del_sg
+  loop:
+    - TEAM2_SSH
+    - TEAM2_HTTP
+- name: delete Routing Table
+  amazon.aws.ec2_vpc_route_table:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    vpc_id: "{{ vpc.vpc_id }}"
+    state: absent
+    tags:
+      Name: "{{ item }}"
+  register: del_routing
+  loop:
+    - TEAM2_Public_Table
+    - TEAM2_Private_Table1
+    - TEAM2_Private_Table2
+- name: delete NAT
+  amazon.aws.ec2_vpc_nat_gateway:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    nat_gateway_id: "{{ nat.nat_gateway_id }}"
+    release_eip: true
+    state: absent
+    wait: true
+  register: del_nat
+  when: 
+    - nat is defined
+    - nat.state != "deleted"
+  ignore_errors: yes
+- name: delete IGW
+  amazon.aws.ec2_vpc_igw:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    vpc_id: "{{ vpc.vpc_id }}"
+    state: absent
+  register: del_igw  
+- name: delete Subnet
+  amazon.aws.ec2_vpc_subnet:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    cidr: "{{ item.cidr_block }}"
+    state: absent
+    vpc_id: "{{ vpc.vpc_id }}"
+  register: del_subnet
+  loop:
+    - "{{ public_subnet1 }}"
+    - "{{ public_subnet2 }}"
+    - "{{ private_subnet1 }}"
+    - "{{ private_subnet2 }}"
+  when: public_subnet1 is defined
+- name: delete VPC
+  amazon.aws.ec2_vpc_net:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    state: absent
+    name: TEAM2_VPC
+    vpc_id: "{{ vpc.vpc_id }}"
+  register: del_vpc
+- name: debug del
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - del_auto
+    - del_alb
+    - del_ec2
+    - del_tg
+    - del_lt
+    - del_ami
+    - del_sg
+    - del_routing
+    - del_nat
+    - del_igw
+    - del_subnet
+    - del_vpc
+

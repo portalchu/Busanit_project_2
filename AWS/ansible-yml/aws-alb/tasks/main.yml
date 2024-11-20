@@ -1,0 +1,83 @@
+---
+- name: Create a Target Group
+  community.aws.elb_target_group:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    name: TEAM2-TG
+    protocol: http
+    port: 80
+    vpc_id: "{{ vpc.id }}"
+    state: present
+    tags:
+      Name: TEAM2_TG
+      Team: TEAM2
+  register: alb_tg
+- name: Create a Jenkins Group
+  community.aws.elb_target_group:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    name: TEAM2-JG
+    protocol: http
+    port: 80
+    vpc_id: "{{ vpc.id }}"
+    state: present
+    target_type: instance
+    targets:
+      - Id: "{{ jenkins.instance_id }}"
+    tags:
+      Name: TEAM2_JG
+      Team: TEAM2
+  register: alb_jg
+- name: Create Load Balancer
+  amazon.aws.elb_application_lb:
+    name: TEAM2-ALB
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    subnets:
+      - "{{ public_subnet1.id }}"
+      - "{{ public_subnet2.id }}"
+    security_groups:
+      - "{{ sg_ssh.group_id }}"
+      - "{{ sg_http.group_id }}"
+    region: "{{ region }}"
+    listeners:
+      - Protocol: HTTP
+        Port: 80
+        DefaultActions:
+          - Type: forward
+            TargetGroupName: TEAM2-TG
+        Rules:
+          - Conditions:
+            - Field: host-header
+              Values:
+                - "project2.jinlabs.net"
+            Priority: '2'
+            Actions:
+              - TargetGroupName: TEAM2-JG
+                Type: forward
+          - Conditions:
+            - Field: host-header
+              Values:
+                - "project2asg.jinlabs.net"
+            Actions:
+              - TargetGroupName: TEAM2-TG
+                Type: forward
+            Priority: '1'
+    tags:
+      Team: TEAM2
+    state: present
+  register: alb
+- name: Debug alb
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - alb_tg
+    - alb_jg
+    - alb
+- name: set facts
+  set_fact:
+    alb_tg: "{{ alb_tg }}"
+    alb_jg: "{{ alb_jg }}"
+    alb : "{{ alb }}"

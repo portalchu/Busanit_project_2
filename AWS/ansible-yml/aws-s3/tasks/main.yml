@@ -1,0 +1,16 @@
+---
+- name: Create S3 Bucket
+  amazon.aws.s3_bucket:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    name: team2-codedeploy-bucket
+    region: "{{ region }}"
+    state: present
+    tags:
+      Name: TEAM2_bucket
+      Team: TEAM2
+  register: s3
+- name: Debug S3
+  ansible.builtin.debug:
+    var: s3
+

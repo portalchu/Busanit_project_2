@@ -1,0 +1,31 @@
+---
+- name: Check EIP
+  amazon.aws.ec2_eip_info:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    filters:
+      "tag:Team": TEAM2
+  register: eip_info 
+- name: set facts
+  set_fact:
+    eip: "{{ eip_info.addresses[0] }}"
+  when: eip_info.addresses|length>0
+- name: debug EIP
+  ansible.builtin.debug:
+    var: eip
+- name: Check NAT
+  amazon.aws.ec2_vpc_nat_gateway_info:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    filters:
+      "tag:Team": TEAM2
+  register: nat_info
+- name: set facts
+  set_fact:
+    nat: "{{ nat_info.result[0] }}"
+  when: nat_info.result|length>0
+- name: Debug NAT
+  ansible.builtin.debug:
+    var: nat

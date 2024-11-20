@@ -1,0 +1,64 @@
+---
+- name: Create Public Routing Table
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ vpc.id }}"
+    region: "{{ region }}"
+    state: present
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    subnets:
+      - "{{ public_subnet1.id }}"
+      - "{{ public_subnet2.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw.gateway_id }}"
+    tags:
+      Name: TEAM2_Public_Table
+      Team: TEAM2
+  register: public_route
+- name: Create Private Routing Table1
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ vpc.id }}"
+    region: "{{ region }}"
+    state: present
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    subnets:
+      - "{{ private_subnet1.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ nat_gateway.nat_gateway_id }}"
+    tags:
+      Name: TEAM2_Private_Table1
+      Team: TEAM2
+  register: private_route1
+- name: Create Private Routing Table2
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ vpc.id }}"
+    region: "{{ region }}"
+    state: present
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    subnets:
+      - "{{ private_subnet2.id }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ nat_gateway.nat_gateway_id }}"
+    tags:
+      Name: TEAM2_Private_Table2
+      Team: TEAM2
+  register: private_route2
+- name: Debug Routing
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - igw
+    - public_route
+    - private_route1
+    - private_route2
+- name: set facts
+  set_fact:
+    igw: "{{ igw }}"
+    public_route: "{{ public_route }}"
+    private_route1: "{{ private_route1 }}"
+    private_route2: "{{ private_route2 }}" 

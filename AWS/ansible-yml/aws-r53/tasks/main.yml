@@ -1,0 +1,34 @@
+---
+- name: Create Record from Jenkins
+  amazon.aws.route53:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    state: present
+    zone: jinlabs.net
+    record: project2.jinlabs.net
+    type: A
+    value: "{{ alb.dns_name }}"
+    alias: true
+    alias_hosted_zone_id: "{{ alb.canonical_hosted_zone_id }}"
+    overwrite: true
+  register: record_jenkins
+- name: Create Record from ASG
+  amazon.aws.route53:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    state: present
+    zone: jinlabs.net
+    record: project2asg.jinlabs.net
+    type: A
+    value: "{{ alb.dns_name }}"
+    alias: true
+    alias_hosted_zone_id: "{{ alb.canonical_hosted_zone_id }}"
+    overwrite: true
+  register: record_asg
+- name: Debug Record
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - record_jenkins
+    - record_asg
+

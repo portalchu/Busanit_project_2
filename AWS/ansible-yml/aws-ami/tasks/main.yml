@@ -1,0 +1,33 @@
+---
+- name: Wait Target EC2
+  wait_for:
+    delay: 120
+- name: Create AMI
+  amazon.aws.ec2_ami:
+    name: TEAM2_AMI
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    instance_id: "{{ target_ec2.instance_ids[0] }}"
+    delete_snapshot: true
+    wait: true
+    tags:
+      Name: TEAM2_AMI
+      Team: TEAM2 
+- name: Check AMI
+  amazon.aws.ec2_ami_info:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    filters:
+      "tag:Name": TEAM2_AMI
+  register: ami
+- name: Debug AMI
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - ami
+- name: set facts
+  set_fact:
+    ami: "{{ ami }}"
+

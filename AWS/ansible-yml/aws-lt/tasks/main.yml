@@ -1,0 +1,43 @@
+---
+- name: Check AMI
+  amazon.aws.ec2_ami_info:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    filters:
+      "tag:Name": TEAM2_AMI
+  register: ami
+- name: Debug AMI
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - ami
+- name: set facts
+  set_fact:
+    ami: "{{ ami }}"
+- name: Create EC2 launch template
+  community.aws.ec2_launch_template:
+    name: TEAM2_TEMPLATE
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    image_id: "{{ ami.images[0].image_id }}"
+    key_name: TEAM2_project_key
+    instance_type: t2.micro
+    security_group_ids:
+      - "{{ sg_ssh.group_id }}"
+      - "{{ sg_http.group_id }}"
+    iam_instance_profile: team2-code-deploy-ec2-role
+    tags:
+      Name: TEAM2_LT
+      Team: TEAM2
+  register: launch_template
+- name: Debug LT
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  loop:
+    - launch_template
+- name: set facts
+  set_fact:
+    launch_template: "{{ launch_template }}"
+

@@ -1,0 +1,12 @@
+---
+- hosts: localhost
+  connection: local
+  vars:
+    region: ap-northeast-2
+  vars_files:
+    - ./pass.txt
+  roles:
+    - aws-get-vpc
+    - aws-get-ec2
+      #- aws-auto
+

@@ -1,0 +1,19 @@
+---
+- name: Get Jenkins EC2
+  amazon.aws.ec2_instance_info:
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    region: "{{ region }}"
+    filters:
+      "tag:Name": TEAM2-Jenkins
+      instance-state-name: ["running"]
+  register: jenkins_info
+- name: Debug Jenkins EC2
+  ansible.builtin.debug:
+    var: jenkins_info
+- name: set facts
+  set_fact:
+    jenkins: "{{ jenkins_info.instances[0] }}"
+- name: Debug Jenkins EC2
+  ansible.builtin.debug:
+    var: jenkins

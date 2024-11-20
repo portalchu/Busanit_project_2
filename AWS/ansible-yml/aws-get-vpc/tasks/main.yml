@@ -1,0 +1,19 @@
+---
+- name: Check VPC
+  amazon.aws.ec2_vpc_net_info:
+    region: "{{ region }}"
+    aws_access_key: "{{ ec2_access_key }}"
+    aws_secret_key: "{{ ec2_secret_key }}"
+    filters:
+      "tag:Name": TEAM2_VPC
+  register: vpc_info
+- name: Debug VPC
+  ansible.builtin.debug:
+    var: vpc_info
+- name: set facts
+  set_fact:
+    vpc: "{{ vpc_info.vpcs[0] }}"
+  when: vpc_info.vpcs|length>0
+- name: Debug facts
+  ansible.builtin.debug:
+    var: vpc
