@@ -1,0 +1,88 @@
+pipeline {
+  agent any
+  tools {
+    jdk "jdk17"
+    maven "M3"
+  }
+        
+  environment { 
+    DOCKERHUB_CREDENTIALS = credentials('dockerCredentials') 
+    REGION = "ap-northeast-2"
+    AWS_CREDENTIALS_NAME = 'AWSCredentials'
+  }
+  stages {
+    stage ('Git Clone') {
+      steps {
+        echo 'Git Clone'
+        git url: 'https://github.com/portalchu/spring-petclinic-aws.git',
+          branch: 'main', credentialsId: 'gitToken'
+      }
+    }
+    stage ('Maven Build') {
+      steps {
+        echo 'Maven Build'
+        sh 'mvn -Dmaven.test.failure.ignore=true package'
+      }
+    }
+    stage ('Docker Image Build') {
+      steps {
+        echo 'Docker Image Build'
+        dir("${env.WORKSPACE}") {
+          sh """
+          docker build -t giry0612/spring-petclinic:$BUILD_NUMBER .
+          docker tag giry0612/spring-petclinic:$BUILD_NUMBER giry0612/spring-petclinic:latest
+          """
+        }
+      }
+    }
+    stage('Docker Login') {
+      steps {
+          // docker hub 로그인
+          sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+        }
+    }
+    stage('Docker Image Push') {
+        steps {
+          echo 'Docker Image Push'  
+          sh "docker push giry0612/spring-petclinic:latest"  // docker push
+        }
+    }
+    stage('Cleaning up') { 
+		    steps { 
+          // docker image 제거
+          echo 'Cleaning up unused Docker images on Jenkins server'
+          sh """
+          docker rmi giry0612/spring-petclinic:$BUILD_NUMBER
+          docker rmi giry0612/spring-petclinic:latest
+          """
+            }
+        }
+    stage('Upload S3') {
+        steps {
+            echo "Upload to S3"
+            dir("${env.WORKSPACE}") {
+                sh 'zip -r scripts.zip ./scripts appspec.yml'
+                withAWS(region:"${REGION}",credentials:"${AWS_CREDENTIALS_NAME}"){
+                    s3Upload(file:"scripts.zip", bucket:"team2-codedeploy-bucket")
+                    }
+                    sh 'rm -rf ./scripts.zip' 
+                }
+            }    
+        }
+    stage('Codedeploy Workload') {
+        steps {
+            echo "Codedeploy Workload"   
+                withAWS(region:"${REGION}",credentials:"${AWS_CREDENTIALS_NAME}"){
+                    sh '''
+                    aws deploy create-deployment --application-name TEAM2_deploy \
+                    --deployment-config-name CodeDeployDefault.OneAtATime \
+                    --deployment-group-name TEAM2_deploy_group \
+                    --ignore-application-stop-failures \
+                    --s3-location bucket=team2-codedeploy-bucket,bundleType=zip,key=scripts.zip
+                    '''
+                }
+                sleep(10) // sleep 10s
+            }
+        }
+    }
+}
